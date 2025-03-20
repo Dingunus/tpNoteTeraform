@@ -71,6 +71,7 @@ resource "aws_api_gateway_resource" "resource_time" {
 }
 
 //configuration de l'api
+# Ressource de méthode GET sur API Gateway
 resource "aws_api_gateway_method" "get_time" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.resource_time.id
@@ -78,6 +79,7 @@ resource "aws_api_gateway_method" "get_time" {
   authorization = "NONE"
 }
 
+# Intégration de la Lambda avec API Gateway
 resource "aws_api_gateway_integration" "lambda_integration" {
   rest_api_id             = aws_api_gateway_rest_api.api.id
   resource_id             = aws_api_gateway_resource.resource_time.id
@@ -87,6 +89,7 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   uri                     = aws_lambda_function.test_lambda.invoke_arn
 }
 
+# Autorisation Lambda pour API Gateway
 resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
@@ -94,4 +97,27 @@ resource "aws_lambda_permission" "apigw_lambda" {
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
+
+# Déploiement de l'API Gateway sans le `stage_name`
+resource "aws_api_gateway_deployment" "api" {
+  depends_on = [
+    aws_api_gateway_integration.lambda_integration,
+    aws_api_gateway_method.get_time
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.api.id
+}
+
+# Création du stage "prod"
+resource "aws_api_gateway_stage" "prod" {
+  stage_name    = "prod"
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  deployment_id = aws_api_gateway_deployment.api.id
+}
+
+# Récupération de l'URL de l'API Gateway déployée
+output "api_gateway_url" {
+  value       = aws_api_gateway_stage.prod.invoke_url
+  description = "L'URL de l'API Gateway déployée"
 }
