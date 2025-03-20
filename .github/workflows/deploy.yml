@@ -40,6 +40,20 @@ jobs:
       - name: Apply Terraform
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve
+      - name: Commit Terraform State
+        run: |
+           git config --global user.name "github-actions[bot]"
+           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+           # Récupérer l'état existant
+           git fetch origin state || git checkout --orphan state
+           # Ajouter le fichier tfstate
+           git checkout state
+           cp terraform.tfstate terraform.tfstate.backup
+           git add terraform.tfstate terraform.tfstate.backup
+           # Commit & push si changements
+           git commit -m "Update Terraform state [skip ci]" || echo "No changes to commit"
+           git push origin state
+
 
 
     
