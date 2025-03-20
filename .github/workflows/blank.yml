@@ -28,6 +28,8 @@ jobs:
 
       - name: Init Terraform
         run: terraform init
+      - name: echo
+        run: echo "AWS Access Key ID: $AWS_ACCESS_KEY_ID"
       - name: Plan Terraform
         run: terraform plan
         env:
