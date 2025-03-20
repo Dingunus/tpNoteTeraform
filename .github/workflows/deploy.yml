@@ -25,21 +25,21 @@ jobs:
           key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
           restore-keys: |
             terraform-${{ runner.os }}-
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
 
       - name: Init Terraform
         run: terraform init
       - name: Plan Terraform
         run: terraform plan
-        env:
-          TF_VAR_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          TF_VAR_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           
       - name: Apply Terraform
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve
-        env:
-          TF_VAR_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          TF_VAR_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 
     
