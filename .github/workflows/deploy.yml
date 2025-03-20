@@ -1,0 +1,62 @@
+
+name: g4-deploy-terraform
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    # Récupération du contenu du repo github
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.2
+
+      - name: Cache Terraform
+        uses: actions/cache@v3
+        with:
+          path: |
+            .terraform
+            terraform.lock.hcl
+          key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            terraform-${{ runner.os }}-
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-3
+
+      - name: Init Terraform
+        run: terraform init
+      - name: Plan Terraform
+        run: terraform plan
+          
+      - name: Apply Terraform
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve
+
+      - name: Output
+        run: terraform output api_gateway_url
+      - name: Commit Terraform State
+        run: |
+           git config --global user.name "github-actions[bot]"
+           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+           # Récupérer l'état existant
+           git fetch origin state || git checkout --orphan state
+           # Ajouter le fichier tfstate
+           git checkout state
+           cp terraform.tfstate terraform.tfstate.backup
+           git add terraform.tfstate terraform.tfstate.backup
+           # Commit & push si changements
+           git commit -m "Update Terraform state [skip ci]" || echo "No changes to commit"
+           git push origin state
+
+
+
+    
