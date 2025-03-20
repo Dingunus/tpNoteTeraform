@@ -40,6 +40,9 @@ jobs:
       - name: Apply Terraform
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve
+
+      - name: Output
+        run: terraform output api_gateway_url
       - name: Commit Terraform State
         run: |
            git config --global user.name "github-actions[bot]"
